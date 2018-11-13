@@ -1,0 +1,30 @@
+#include <RH_ASK.h>
+
+// wireless receiver pin defaults to PIN11
+RH_ASK driver;
+
+void setup()
+{
+    // Setup serial to computer
+    Serial.begin(9600);
+    
+    // Setup wirless receiver
+    Serial.println("Setting up");
+    if (!driver.init())
+      Serial.println("driver init failed");
+    
+    Serial.println("Completed setup"); 
+}
+
+void loop()
+{
+  uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
+  uint8_t buflen = sizeof(buf);
+
+  if (driver.recv(buf, &buflen)) {
+	  // Message with a good checksum received, dump it.
+	  buf[buflen] = '\0';
+	  Serial.println((char*)buf);
+	  Serial.println(buflen);
+  }
+}
