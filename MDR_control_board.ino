@@ -10,12 +10,10 @@ RH_ASK driver;
 
 //LED controls (Cassius)
 #define LED_PIN 6
-int num = 88; t
+int num = 88;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(num, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
-  // Setup serial connection to BT chip
-  mySerial.begin(9600);
   // Setup serial connection to computer
   Serial.begin(9600);
   
@@ -24,11 +22,14 @@ void setup() {
       Serial.println("driver init failed");
   
   // Setup bluetooth chip
+    // Setup serial connection to BT chip
+  mySerial.begin(9600);
   // AT+ == send command
   // set name to bluino
-  sendBTCommand("AT+NAMEbluino");
-  // set role to server (accepts connections from other devices)
+  
   sendBTCommand("AT+ROLE0");
+  sendBTCommand("AT+NAMEpiano");
+
   
   //initialize all LEDS to "off"
   strip.begin();
