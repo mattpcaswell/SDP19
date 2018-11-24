@@ -12,19 +12,38 @@ void setup()
     Serial.println("Setting up");
     if (!driver.init())
       Serial.println("driver init failed");
+      
+    // Setup output pins
+    pinMode(2, OUTPUT);
+    pinMode(3, OUTPUT);
+    pinMode(4, OUTPUT);
+    pinMode(5, OUTPUT);
+    pinMode(6, OUTPUT);
     
     Serial.println("Completed setup"); 
+}
+
+void spinMotor(int e){
+  int q = e%5+2;
+  digitalWrite(2, LOW);
+  digitalWrite(3, LOW);
+  digitalWrite(4, LOW);
+  digitalWrite(5, LOW);
+  digitalWrite(6, LOW);
+  digitalWrite(q, HIGH);
 }
 
 void loop()
 {
   uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
   uint8_t buflen = sizeof(buf);
+  int num;
 
   if (driver.recv(buf, &buflen)) {
 	  // Message with a good checksum received, dump it.
 	  buf[buflen] = '\0';
 	  Serial.println((char*)buf);
-	  Serial.println(buflen);
+	  sscanf(buf, "%d", &num);
+	  spinMotor(num);
   }
 }
