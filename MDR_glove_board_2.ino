@@ -2,6 +2,8 @@
 #include <RH_ASK.h>
 #include <SoftwareSerial.h>
 
+#define DEBUG true
+
 #define ON_CHAR  'y'
 #define OFF_CHAR  'n'
 #define FINGER_CHAR  'f'
@@ -84,22 +86,27 @@ void writeToBT(char *value) {
 
 // Send data over wireless chip to gloves
 void writeToGloves(short fingers[10]) {
-  char msg[10] = "";
+  char msg[20] = "";
 
   for (int i = 0; i < 10; i++) {
     if (fingers[i]) {
-      char finger[1];
-      snprintf(finger, 1, "%d", i);
+      char finger[2];
+      snprintf(finger, 2, "%d", i);
       strcat(msg, finger);
     }
   }
 
-  Serial.print("sending to gloves: ");
-  Serial.println(msg);
+  if (DEBUG) {
+    Serial.print("sending to gloves: ");
+    Serial.println(msg);
+  }
   
   driver.send((uint8_t *)msg, strlen(msg));
   driver.waitPacketSent();
-  Serial.println("Sent.");
+  
+  if (DEBUG) {
+    Serial.println("Sent.");
+  }
 }
 
 void loop() {
@@ -109,14 +116,19 @@ void loop() {
 void setKey(int key_num, char off_or_on) {
   if (off_or_on == ON_CHAR) {
     // turn key_num on
-    Serial.println("turning key on:");
-    Serial.println(key_num);
-
+    if (1) {
+      Serial.println("turning key on:");
+      Serial.println(key_num);
+    }
+    
     strip.setPixelColor(key_num, LED_COLOR_R, LED_COLOR_G, LED_COLOR_B);
   } else if (off_or_on == OFF_CHAR) {
     // turn key_num off
-    Serial.println("turning key off:");
-    Serial.println(key_num);
+    if (1) {
+      Serial.println("turning key off:");
+      Serial.println(key_num);
+    }
+    
     strip.setPixelColor(key_num, 0,0,0);
   } else {
     // invalid off_or_on value. Should be either ON_CHAR or OFF_CHAR
@@ -138,8 +150,8 @@ void readBT(char* data){
   //end the string
   data[i] = '\0';
   if(strlen(data) > 0){
-    Serial.println(data);
-    Serial.println("We have just read some data");
+    //Serial.println(data);
+    //Serial.println("We have just read some data");
   } else {
     // No data read.
     data[0] = '\0';
@@ -189,8 +201,10 @@ void watchBT() {
 
 void parseCmd(char *cmd) {
   int i = 1;
-  Serial.println("Parsing Cmd:");
-  Serial.println(cmd);
+  if (DEBUG) {
+    Serial.println("Parsing Cmd:");
+    Serial.println(cmd);
+  }
   
   if (cmd[0] == FINGER_CHAR) {
     // Process line of finger data
@@ -211,6 +225,8 @@ void parseCmd(char *cmd) {
 
       // send finger number to gloves
       if (found_number) {
+        Serial.print("found finger ");
+        Serial.println(finger_num);
         fingers[finger_num] = 1;
       }
     }
