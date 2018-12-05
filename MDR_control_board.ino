@@ -2,6 +2,8 @@
 #include <RH_ASK.h>
 #include <SoftwareSerial.h>
 
+#define DEBUG 0
+
 #define ON_CHAR  'y'
 #define OFF_CHAR  'n'
 #define FINGER_CHAR  'f'
@@ -9,7 +11,7 @@
 #define END_CHAR  ';'
 
 #define NUM_KEYS 88
-#define MAX_DATA_LENGTH 256 // big enough to turn every key off or on and more.
+#define MAX_DATA_LENGTH 256
 
 #define LED_PIN 6
 #define BT_RX_PIN 2
@@ -77,8 +79,10 @@ void sendBTCommand(const char * command){
 
 // Write data to BT chip
 void writeToBT(char *value) {
-  Serial.print("Writing to BT:");
-  Serial.println(value);
+  if (DEBUG) {
+    Serial.print("Writing to BT:");
+    Serial.println(value);
+  }
   btSerial.write(value, strlen(value));
 }
 
@@ -87,29 +91,40 @@ void writeToGloves(int finger_num) {
   char msg[2];
 
   snprintf(msg, 2, "%d", finger_num);
-  Serial.print("sending to gloves: ");
-  Serial.println(msg);
+  
+  if (1) {
+    Serial.print("sending to gloves: ");
+    Serial.println(msg);
+  }
   
   driver.send((uint8_t *)msg, strlen(msg));
   driver.waitPacketSent();
-  Serial.println("Sent.");
+  
+  if (DEBUG) {
+    Serial.println("Sent.");
+  }
 }
 
 void loop() {
+  btSerial.listen();
   watchBT();
 }
 
 void setKey(int key_num, char off_or_on) {
   if (off_or_on == ON_CHAR) {
     // turn key_num on
-    Serial.println("turning key on:");
-    Serial.println(key_num);
+    if (DEBUG) {
+      Serial.println("turning key on:");
+      Serial.println(key_num);
+    }
 
     strip.setPixelColor(key_num, LED_COLOR_R, LED_COLOR_G, LED_COLOR_B);
   } else if (off_or_on == OFF_CHAR) {
     // turn key_num off
-    Serial.println("turning key off:");
-    Serial.println(key_num);
+    if (DEBUG) {
+      Serial.println("turning key off:");
+      Serial.println(key_num);
+    }
     strip.setPixelColor(key_num, 0,0,0);
   } else {
     // invalid off_or_on value. Should be either ON_CHAR or OFF_CHAR
@@ -123,7 +138,7 @@ void setKey(int key_num, char off_or_on) {
 void readBT(char* data){
   int i = 0;
 
-  while (btSerial.available()) {
+  while (btSerial.available() > 0 && i < MAX_DATA_LENGTH) {
     data[i] = btSerial.read();
     i += 1;
   }
@@ -131,8 +146,8 @@ void readBT(char* data){
   //end the string
   data[i] = '\0';
   if(strlen(data) > 0){
-    Serial.println(data);
-    Serial.println("We have just read some data");
+      //Serial.println(data);
+      Serial.println("We have just read some data");
   } else {
     // No data read.
     data[0] = '\0';
@@ -182,8 +197,10 @@ void watchBT() {
 
 void parseCmd(char *cmd) {
   int i = 1;
-  Serial.println("Parsing Cmd:");
-  Serial.println(cmd);
+  if (1) {
+    Serial.println("Parsing Cmd:");
+    Serial.println(cmd);
+  }
   
   if (cmd[0] == FINGER_CHAR) {
     // Process line of finger data
