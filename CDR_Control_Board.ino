@@ -10,7 +10,7 @@
 #define SEPARATOR_CHAR  ',' // Cannot change!
 #define END_CHAR  ';'
 
-#define NUM_LEDS 88
+#define NUM_KEYS 88
 #define MAX_DATA_LENGTH 256 // big enough to turn every key off or on at the same time. Not enough to do that + every finger
 
 #define LED_PIN 6
@@ -18,15 +18,15 @@
 #define BT_TX_PIN 3
 #define GLOVE_TX_PIN 12
 
-#define WHITE_LED_COLOR_R 0
-#define WHITE_LED_COLOR_G 0
-#define WHITE_LED_COLOR_B 100
+#define WHITE_LED_COLOR_R 25
+#define WHITE_LED_COLOR_G 25
+#define WHITE_LED_COLOR_B 25
 
-#define BLACK_LED_COLOR_R 100
-#define BLACK_LED_COLOR_G 65
+#define BLACK_LED_COLOR_R 50
+#define BLACK_LED_COLOR_G 32
 #define BLACK_LED_COLOR_B 0
 
-const short keyMapping[88] = {0, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173};
+const short keyMapping[88] = {0, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 70, 72, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 92, 94, 96, 98, 100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120, 122, 124, 126, 128, 130, 132, 134, 136, 138, 140, 142, 144, 146, 148, 150, 152, 154, 156, 158, 160, 162, 164, 166, 168, 170, 172};
 const char  blackKeyMapping[12] = {0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1};
 
 // establishes pins for BT
@@ -36,7 +36,7 @@ SoftwareSerial btSerial(BT_RX_PIN, BT_TX_PIN); // RX, TX
 RH_ASK driver;
 
 //LED controls
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(keyMapping[NUM_KEYS - 1] + 2, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   // Setup serial connection to computer
@@ -52,6 +52,8 @@ void setup() {
   //initialize all LEDS to "off"
   strip.begin();
   clearAllLEDs();
+  strip.show();
+  setAllKeys();
   strip.show();
 }
 
@@ -164,11 +166,6 @@ void parseCmd(char *cmd) {
 void setKey(int key_num, char off_or_on) {
   if (off_or_on == ON_CHAR) {
     // turn key_num on
-    if (1) {
-      Serial.println("turning key on:");
-      Serial.println(key_num);
-    }
-
     if (isKeyBlack(key_num)) {
         strip.setPixelColor(keyMapping[key_num], BLACK_LED_COLOR_R, BLACK_LED_COLOR_G, BLACK_LED_COLOR_B);
     } else {
@@ -176,11 +173,6 @@ void setKey(int key_num, char off_or_on) {
     }
   } else if (off_or_on == OFF_CHAR) {
     // turn key_num off
-    if (1) {
-      Serial.println("turning key off:");
-      Serial.println(key_num);
-    }
-
     strip.setPixelColor(keyMapping[key_num], 0, 0, 0);
   } else {
     // invalid off_or_on value. Should be either ON_CHAR or OFF_CHAR
@@ -190,9 +182,15 @@ void setKey(int key_num, char off_or_on) {
 }
 
 void clearAllLEDs() {
-    for(int i = 0; i < NUM_LEDS; i++) {
+    for(int i = 0; i < keyMapping[NUM_KEYS - 1]; i++) {
         strip.setPixelColor(i, 0, 0, 0);
     }
+}
+
+void setAllKeys() {
+  for(int i = 0; i < NUM_KEYS; i++) {
+    setKey(i, ON_CHAR);
+  }
 }
 
 char isKeyBlack(short keynum) {
@@ -244,4 +242,3 @@ void writeToGloves(short fingers[10]) {
     Serial.println("Sent.");
   }
 }
-
