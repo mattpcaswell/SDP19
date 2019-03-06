@@ -10,19 +10,24 @@
 #define SEPARATOR_CHAR  ',' // Cannot change!
 #define END_CHAR  ';'
 
-#define NUM_KEYS 88
-#define MAX_DATA_LENGTH 256 // big enough to turn every key off or on and more.
+#define NUM_LEDS 88
+#define MAX_DATA_LENGTH 256 // big enough to turn every key off or on at the same time. Not enough to do that + every finger
 
 #define LED_PIN 6
 #define BT_RX_PIN 2
 #define BT_TX_PIN 3
 #define GLOVE_TX_PIN 12
 
-#define LED_COLOR_R 0
-#define LED_COLOR_G 100
-#define LED_COLOR_B 0
+#define WHITE_LED_COLOR_R 0
+#define WHITE_LED_COLOR_G 0
+#define WHITE_LED_COLOR_B 100
 
-const int keyMapping[88] = {0, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173};
+#define BLACK_LED_COLOR_R 100
+#define BLACK_LED_COLOR_G 65
+#define BLACK_LED_COLOR_B 0
+
+const short keyMapping[88] = {0, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143, 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 171, 173};
+const char  blackKeyMapping[12] = {0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1};
 
 // establishes pins for BT
 SoftwareSerial btSerial(BT_RX_PIN, BT_TX_PIN); // RX, TX
@@ -31,136 +36,28 @@ SoftwareSerial btSerial(BT_RX_PIN, BT_TX_PIN); // RX, TX
 RH_ASK driver;
 
 //LED controls
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(173, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   // Setup serial connection to computer
   Serial.begin(9600);
 
+  // Setup serial connection to BT chip
+  btSerial.begin(9600);
+
   // Setup wireless transmitter
   if (!driver.init())
     Serial.println("driver init failed");
 
-  // Setup serial connection to BT chip
-  btSerial.begin(9600);
-
-  //sendBTCommand("AT+RESET");
-  //delay(1000);
-  //sendBTCommand("AT+ROLE0");
-  //delay(100);
-  sendBTCommand("AT+NAME=piano");
-  delay(100);
-  sendBTCommand("AT+NAME=?");
-  delay(100);
   //initialize all LEDS to "off"
   strip.begin();
+  clearAllLEDs();
   strip.show();
-}
-
-// Sends the command and listens for the response
-void sendBTCommand(const char * command) {
-  Serial.print("Command send :");
-  Serial.println(command);
-
-  btSerial.println(command);
-
-  delay(100);
-
-  char reply[100];
-  int i = 0;
-  while (btSerial.available()) {
-    reply[i] = btSerial.read();
-    i += 1;
-  }
-
-  //end the string
-  reply[i] = '\0';
-  Serial.print(reply);
-  Serial.println("Reply end");
-}
-
-
-// Write data to BT chip
-void writeToBT(char *value) {
-  Serial.print("Writing to BT:");
-  Serial.println(value);
-  btSerial.write(value, strlen(value));
-}
-
-// Send data over wireless chip to gloves
-void writeToGloves(short fingers[10]) {
-  char msg[20] = "";
-
-  for (int i = 0; i < 10; i++) {
-    if (fingers[i]) {
-      char finger[2];
-      snprintf(finger, 2, "%d", i);
-      strcat(msg, finger);
-    }
-  }
-
-  if (DEBUG) {
-    Serial.print("sending to gloves: ");
-    Serial.println(msg);
-  }
-
-  driver.send((uint8_t *)msg, strlen(msg));
-  driver.waitPacketSent();
-
-  if (DEBUG) {
-    Serial.println("Sent.");
-  }
 }
 
 void loop() {
   watchBT();
 }
-
-void setKey(int key_num, char off_or_on) {
-  if (off_or_on == ON_CHAR) {
-    // turn key_num on
-    if (1) {
-      Serial.println("turning key on:");
-      Serial.println(key_num);
-    }
-
-    strip.setPixelColor(keyMapping[key_num], LED_COLOR_R, LED_COLOR_G, LED_COLOR_B);
-  } else if (off_or_on == OFF_CHAR) {
-    // turn key_num off
-    if (1) {
-      Serial.println("turning key off:");
-      Serial.println(key_num);
-    }
-
-    strip.setPixelColor(keyMapping[key_num], 0, 0, 0);
-  } else {
-    // invalid off_or_on value. Should be either ON_CHAR or OFF_CHAR
-    Serial.println("INVALID OFF OR ON VALUE GIVEN TO setKey():");
-    Serial.println(off_or_on);
-  }
-}
-
-// Read any data sent to the BT chip
-// Returns empty string if there is no data
-void readBT(char* data) {
-  int i = 0;
-
-  while (btSerial.available()) {
-    data[i] = btSerial.read();
-    i += 1;
-  }
-
-  //end the string
-  data[i] = '\0';
-  if (strlen(data) > 0) {
-    //Serial.println(data);
-    //Serial.println("We have just read some data");
-  } else {
-    // No data read.
-    data[0] = '\0';
-  }
-}
-
 
 // take in any number of strings and build them into strings seperated by ;
 // Format:
@@ -177,7 +74,6 @@ void watchBT() {
   int bufi = 0;
 
   // 1. read until ; or \0
-
   while (true) {
     if (buf[bufi] == '\0') {
       // buffer is empty. Refill it
@@ -264,3 +160,88 @@ void parseCmd(char *cmd) {
     strip.show();
   }
 }
+
+void setKey(int key_num, char off_or_on) {
+  if (off_or_on == ON_CHAR) {
+    // turn key_num on
+    if (1) {
+      Serial.println("turning key on:");
+      Serial.println(key_num);
+    }
+
+    if (isKeyBlack(key_num)) {
+        strip.setPixelColor(keyMapping[key_num], BLACK_LED_COLOR_R, BLACK_LED_COLOR_G, BLACK_LED_COLOR_B);
+    } else {
+        strip.setPixelColor(keyMapping[key_num], WHITE_LED_COLOR_R, WHITE_LED_COLOR_G, WHITE_LED_COLOR_B);
+    }
+  } else if (off_or_on == OFF_CHAR) {
+    // turn key_num off
+    if (1) {
+      Serial.println("turning key off:");
+      Serial.println(key_num);
+    }
+
+    strip.setPixelColor(keyMapping[key_num], 0, 0, 0);
+  } else {
+    // invalid off_or_on value. Should be either ON_CHAR or OFF_CHAR
+    Serial.println("INVALID OFF OR ON VALUE GIVEN TO setKey():");
+    Serial.println(off_or_on);
+  }
+}
+
+void clearAllLEDs() {
+    for(int i = 0; i < NUM_LEDS; i++) {
+        strip.setPixelColor(i, 0, 0, 0);
+    }
+}
+
+char isKeyBlack(short keynum) {
+    return blackKeyMapping[keynum % 12];
+}
+
+// Read any data sent to the BT chip
+// Returns empty string if there is no data
+void readBT(char* data) {
+  int i = 0;
+
+  while (btSerial.available()) {
+    data[i] = btSerial.read();
+    i += 1;
+  }
+
+  //end the string
+  data[i] = '\0';
+  if (strlen(data) > 0) {
+    //Serial.println(data);
+    //Serial.println("We have just read some data");
+  } else {
+    // No data read.
+    data[0] = '\0';
+  }
+}
+
+// Send data over wireless chip to gloves
+void writeToGloves(short fingers[10]) {
+  char msg[20] = "";
+
+  for (int i = 0; i < 10; i++) {
+    if (fingers[i]) {
+      char finger[2];
+      snprintf(finger, 2, "%d", i);
+      strcat(msg, finger);
+    }
+  }
+
+  if (DEBUG) {
+    Serial.print("sending to gloves: ");
+    Serial.println(msg);
+  }
+
+  driver.send((uint8_t *)msg, strlen(msg));
+  driver.waitPacketSent();
+
+  if (DEBUG) {
+    Serial.println("Sent.");
+  }
+}
+
